@@ -33,6 +33,14 @@ def build_presets():
          ["Clean", "Thin", "Bright", "Sharp", "Wide", "Digital", "Smooth", "Fast", "Nasal", "Glass"],
          ["Lead", "Beam", "Hook", "Line", "Tone", "Edge", "Voice", "Signal", "Peak", "Trace"]),
 
+        ("Voice",
+         ["Human", "Robot", "Choir", "Vocal", "Formant", "Talking", "Breathy", "Synthetic", "Nasal", "Soft"],
+         ["Voice", "Vowel", "Choir", "Mouth", "Phrase", "Talk", "Air", "Speech", "Tone", "Hum"]),
+
+        ("Meow",
+         ["Tiny", "Sad", "Robot", "Cute", "Angry", "Soft", "Digital", "Cartoon", "Long", "Baby"],
+         ["Meow", "Cat", "Miau", "Kitten", "Purr", "Nya", "Mew", "Call", "Cry", "Mouth"]),
+
         ("SFX",
          ["Rise", "Fall", "Cold", "Air", "Noise", "Metal", "Ghost", "Reverse", "Impact", "Broken"],
          ["FX", "Sweep", "Hit", "Lift", "Dust", "Crash", "Stab", "Riser", "Drop", "Spark"]),
@@ -58,30 +66,34 @@ def build_presets():
          ["Perc", "Tap", "Knock", "Hit", "Noise", "Rim", "Pulse", "Clack", "Stick", "Shot"]),
     ]
 
-    seqs = {
-        "Pad": [48, 55, 60, 64, 67, 64, 60, 55],
-        "Pluck": [60, 64, 67, 72, 67, 64, 60, 55],
-        "Bass": [36, 36, 43, 36, 39, 36, 43, 39],
-        "Lead": [60, 63, 67, 70, 72, 70, 67, 63],
-        "SFX": [48, 50, 55, 60, 67, 72, 79, 84],
-        "Instrument": [52, 59, 64, 67, 71, 67, 64, 59],
-        "Chill": [48, 52, 55, 60, 64, 60, 55, 52],
-        "Texture": [36, 43, 48, 55, 60, 55, 48, 43],
-        "Keys": [60, 64, 67, 71, 72, 71, 67, 64],
-        "Perc": [48, 48, 55, 48, 60, 48, 55, 48],
-    }
-
     waves = {
         "Pad": ["sine", "organ", "vowel", "glass"],
         "Pluck": ["triangle", "glass", "pulse", "bright"],
         "Bass": ["sawtooth", "square", "pulse", "organ"],
         "Lead": ["square", "bright", "pulse", "vowel"],
+        "Voice": ["voice", "vowel", "choir", "hollow"],
+        "Meow": ["meow", "voice", "pulse", "glass"],
         "SFX": ["metal", "bright", "glass", "noiseform"],
         "Instrument": ["triangle", "organ", "glass", "hollow"],
         "Chill": ["sine", "triangle", "vowel", "glass"],
         "Texture": ["glass", "metal", "vowel", "bright"],
         "Keys": ["triangle", "organ", "glass", "hollow"],
         "Perc": ["pulse", "square", "metal", "noiseform"],
+    }
+
+    seqs = {
+        "Pad": [48, 55, 60, 64, 67, 64, 60, 55],
+        "Pluck": [60, 64, 67, 72, 67, 64, 60, 55],
+        "Bass": [36, 36, 43, 36, 39, 36, 43, 39],
+        "Lead": [60, 63, 67, 70, 72, 70, 67, 63],
+        "Voice": [60, 62, 64, 65, 67, 65, 64, 62],
+        "Meow": [67, 67, 64, 62, 60, 62, 64, 67],
+        "SFX": [48, 50, 55, 60, 67, 72, 79, 84],
+        "Instrument": [52, 59, 64, 67, 71, 67, 64, 59],
+        "Chill": [48, 52, 55, 60, 64, 60, 55, 52],
+        "Texture": [36, 43, 48, 55, 60, 55, 48, 43],
+        "Keys": [60, 64, 67, 71, 72, 71, 67, 64],
+        "Perc": [48, 48, 55, 48, 60, 48, 55, 48],
     }
 
     presets = []
@@ -97,17 +109,19 @@ def build_presets():
             is_sfx = group == "SFX"
             is_perc = group == "Perc"
             is_pluck = group == "Pluck"
-            is_short = group in ["Pluck", "Perc"]
-            is_pad = group in ["Pad", "Chill", "Texture"]
+            is_meow = group == "Meow"
+            is_voice = group == "Voice"
+            is_short = group in ["Pluck", "Perc", "Meow"]
+            is_pad = group in ["Pad", "Chill", "Texture", "Voice"]
 
-            preset = {
+            presets.append({
                 "id": slugify(f"{group}-{name}-{index}"),
                 "name": name,
                 "type": group,
 
                 "osc1_on": True,
                 "osc1_wave": wave_a,
-                "osc1_level": round(0.50 + ((index * 7) % 35) / 100, 2),
+                "osc1_level": round(0.55 + ((index * 7) % 35) / 100, 2),
                 "osc1_oct": -1 if is_bass else 0,
                 "osc1_semi": [0, 0, 7, 12][index % 4],
                 "osc1_detune": -8 + (index % 17),
@@ -115,7 +129,7 @@ def build_presets():
 
                 "osc2_on": False if is_perc else True,
                 "osc2_wave": wave_b,
-                "osc2_level": round(0.20 + ((index * 5) % 45) / 100, 2),
+                "osc2_level": round(0.25 + ((index * 5) % 45) / 100, 2),
                 "osc2_oct": 1 if is_pad else 0,
                 "osc2_semi": [0, 7, 12, -12][index % 4],
                 "osc2_detune": -6 + (index % 13),
@@ -123,38 +137,37 @@ def build_presets():
 
                 "sub_on": True if is_bass else index % 3 == 0,
                 "sub_wave": "sine" if index % 2 == 0 else "triangle",
-                "sub_level": 0.35 if is_bass else round(0.05 + ((index * 2) % 20) / 100, 2),
+                "sub_level": 0.38 if is_bass else round(0.05 + ((index * 2) % 20) / 100, 2),
                 "sub_oct": -2 if is_bass else -1,
 
-                "noise_on": True if is_sfx or is_perc or group == "Texture" else index % 7 == 0,
+                "noise_on": True if is_sfx or is_perc or group == "Texture" or is_meow else index % 7 == 0,
                 "noise_type": ["white", "dark", "bright"][index % 3],
-                "noise_level": round((0.08 if is_sfx else 0.04 if is_perc else 0.02) + ((index % 5) / 100), 2),
+                "noise_level": round((0.06 if is_meow else 0.08 if is_sfx else 0.04 if is_perc else 0.02) + ((index % 5) / 100), 2),
 
                 "filter_type": ["lowpass", "bandpass", "highpass"][index % 3] if is_sfx else "lowpass",
-                "cutoff": 650 if is_bass else 2400 + ((index * 137) % 6500),
+                "cutoff": 700 if is_bass else 4200 if is_voice else 3600 if is_meow else 2600 + ((index * 137) % 6500),
                 "q": round(1.0 + ((index * 3) % 80) / 10, 1),
 
-                "attack": 0.005 if is_short else 0.01 if is_bass else round(0.08 + ((index * 4) % 60) / 100, 3),
-                "decay": round(0.08 + ((index * 3) % 25) / 100, 2) if is_pluck else 0.10 if is_perc else round(0.15 + ((index * 5) % 85) / 100, 2),
-                "sustain": 0.0 if is_short else round(0.35 + ((index * 3) % 50) / 100, 2),
-                "release": round(0.08 + ((index * 2) % 16) / 100, 2) if is_pluck else 0.08 if is_perc else 0.25 if is_bass else round(0.40 + ((index * 6) % 130) / 100, 2),
+                "attack": 0.005 if is_short else 0.01 if is_bass else 0.04 if is_voice else round(0.08 + ((index * 4) % 60) / 100, 3),
+                "decay": round(0.08 + ((index * 3) % 25) / 100, 2) if is_pluck else 0.22 if is_meow else 0.10 if is_perc else 0.35 if is_voice else round(0.15 + ((index * 5) % 85) / 100, 2),
+                "sustain": 0.0 if is_short else 0.55 if is_voice else round(0.35 + ((index * 3) % 50) / 100, 2),
+                "release": 0.32 if is_meow else round(0.08 + ((index * 2) % 16) / 100, 2) if is_pluck else 0.08 if is_perc else 0.25 if is_bass else 0.75 if is_voice else round(0.40 + ((index * 6) % 130) / 100, 2),
 
-                "drive": 0.22 if is_bass else 0.12 if is_sfx else round(((index * 2) % 18) / 100, 2),
-                "delay": 0.02 if is_bass or is_perc else round(0.06 + ((index * 3) % 28) / 100, 2),
+                "drive": 0.18 if is_bass else 0.10 if is_voice else 0.12 if is_sfx else round(((index * 2) % 18) / 100, 2),
+                "delay": 0.02 if is_bass or is_perc else 0.12 if is_meow else round(0.06 + ((index * 3) % 28) / 100, 2),
                 "feedback": round(0.10 + ((index * 2) % 25) / 100, 2),
-                "reverb": 0.04 if is_bass else round(0.08 + ((index * 4) % 30) / 100, 2),
+                "reverb": 0.04 if is_bass else 0.16 if is_meow else 0.22 if is_voice else round(0.08 + ((index * 4) % 30) / 100, 2),
 
-                "bpm": 150 if is_perc or is_bass else 120 + (index % 35),
+                "bpm": 150 if is_perc or is_bass else 128 if is_meow else 120 + (index % 35),
                 "gate": 0.18 if is_short else 0.72,
-                "master": 0.08 if is_bass else 0.10 if is_perc else 0.12,
 
+                "master": 1.0,
                 "sequence": seqs[group],
-            }
+            })
 
-            presets.append(preset)
             index += 1
 
-    return presets[:100]
+    return presets
 
 
 PRESETS = build_presets()
@@ -248,6 +261,10 @@ select {
     display: flex;
     gap: 8px;
     padding-right: 12px;
+}
+
+.mobile-tabs {
+    display: none;
 }
 
 button,
@@ -523,15 +540,10 @@ body.light .key {
     border-top: 1px solid var(--line);
     background: var(--panel);
     display: grid;
-    grid-template-columns: 180px 1fr 220px;
+    grid-template-columns: 1fr 220px;
     gap: 12px;
     align-items: center;
     padding: 0 12px;
-}
-
-.transport {
-    display: flex;
-    gap: 8px;
 }
 
 .status {
@@ -555,34 +567,182 @@ body.light .key {
     html,
     body {
         overflow: auto;
+        height: auto;
     }
 
     .app {
         height: auto;
-    }
-
-    .main {
-        grid-template-columns: 1fr;
-    }
-
-    .left,
-    .right {
-        display: none;
-    }
-
-    .center {
-        min-height: 750px;
+        min-height: 100vh;
+        display: block;
     }
 
     .top {
         grid-template-columns: 1fr;
-        padding: 10px 0;
-        gap: 8px;
+        padding: 10px 0 0 0;
+        gap: 10px;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+    }
+
+    .logo {
+        padding-left: 12px;
     }
 
     .actions {
-        padding-left: 14px;
+        padding-left: 12px;
+        padding-right: 12px;
         justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .mobile-tabs {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-top: 1px solid var(--line);
+        width: 100%;
+    }
+
+    .mobile-tab {
+        height: 38px;
+        border-left: 0;
+        border-right: 1px solid var(--line);
+        border-top: 0;
+        border-bottom: 0;
+        background: var(--panel);
+    }
+
+    .mobile-tab:last-child {
+        border-right: 0;
+    }
+
+    .mobile-tab.active {
+        background: var(--text);
+        color: var(--bg);
+    }
+
+    .main {
+        display: block;
+    }
+
+    .left,
+    .right,
+    .center {
+        display: none;
+        overflow: visible;
+        border-left: 0;
+        border-right: 0;
+    }
+
+    body.mobile-view-wave .center {
+        display: grid;
+        min-height: calc(100vh - 132px);
+        grid-template-rows: 62px 1fr;
+    }
+
+    body.mobile-view-wave .center .graph {
+        display: block;
+        min-height: calc(100vh - 194px);
+    }
+
+    body.mobile-view-wave .center .keyboard-box {
+        display: none;
+    }
+
+    body.mobile-view-settings .left,
+    body.mobile-view-settings .right {
+        display: block;
+        border-top: 1px solid var(--line);
+    }
+
+    body.mobile-view-settings #mixPanel {
+        display: none;
+    }
+
+    body.mobile-view-piano .center {
+        display: grid;
+        min-height: calc(100vh - 132px);
+        grid-template-rows: 62px 1fr;
+    }
+
+    body.mobile-view-piano .center .graph {
+        display: none;
+    }
+
+    body.mobile-view-piano .center .keyboard-box {
+        display: block;
+        min-height: calc(100vh - 194px);
+        padding-top: 24px;
+    }
+
+    body.mobile-view-piano .keyboard {
+        height: 180px;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+
+    body.mobile-view-piano .key {
+        min-width: 42px;
+        height: 180px;
+    }
+
+    body.mobile-view-piano .key.black {
+        min-width: 26px;
+        height: 110px;
+        margin-left: -13px;
+        margin-right: -13px;
+    }
+
+    body.mobile-view-mix .right {
+        display: block;
+        min-height: calc(100vh - 132px);
+        border-top: 1px solid var(--line);
+    }
+
+    body.mobile-view-mix .right .block {
+        display: none;
+    }
+
+    body.mobile-view-mix #mixPanel {
+        display: block;
+        min-height: calc(100vh - 132px);
+    }
+
+    body.mobile-view-mix .small-canvas {
+        height: calc(100vh - 210px);
+        min-height: 360px;
+    }
+
+    .footer {
+        position: sticky;
+        bottom: 0;
+        z-index: 20;
+        grid-template-columns: 1fr 150px;
+    }
+
+    button,
+    select,
+    .search {
+        height: 34px;
+    }
+
+    .block {
+        padding: 14px 12px;
+    }
+
+    .controls {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .row2,
+    .row3,
+    .row4 {
+        grid-template-columns: 1fr;
+    }
+
+    .sound-name {
+        font-size: 18px;
     }
 }
 </style>
@@ -602,6 +762,13 @@ body.light .key {
         <button id="exportBtn">Export</button>
         <button id="themeBtn">Light</button>
         <button id="topPlayBtn">Play</button>
+    </div>
+
+    <div class="mobile-tabs">
+        <button class="mobile-tab active" data-view="wave">Wave</button>
+        <button class="mobile-tab" data-view="settings">Settings</button>
+        <button class="mobile-tab" data-view="piano">Piano</button>
+        <button class="mobile-tab" data-view="mix">Mix</button>
     </div>
 </header>
 
@@ -835,13 +1002,13 @@ body.light .key {
                 </div>
                 <div class="ctrl">
                     <label>Volume <b id="masterVal"></b></label>
-                    <input id="master" type="range" min="0" max="0.35" step="0.001">
+                    <input id="master" type="range" min="0" max="1" step="0.001">
                 </div>
             </div>
         </div>
 
-        <div class="block">
-            <div class="title">Output</div>
+        <div class="block" id="mixPanel">
+            <div class="title">Output Mix</div>
             <div class="small-canvas">
                 <canvas id="spectrumCanvas"></canvas>
             </div>
@@ -852,11 +1019,6 @@ body.light .key {
 </main>
 
 <footer class="footer">
-    <div class="transport">
-        <button id="playBtn">Play</button>
-        <button id="stopBtn">Stop</button>
-    </div>
-
     <div class="status" id="status">Ready</div>
 
     <div class="meter">
@@ -889,6 +1051,9 @@ const waveOptions = [
     "organ",
     "bright",
     "vowel",
+    "voice",
+    "choir",
+    "meow",
     "glass",
     "metal",
     "hollow",
@@ -915,6 +1080,26 @@ document.addEventListener("selectstart", e => {
     }
 });
 
+function setMobileView(view) {
+    const views = ["wave", "settings", "piano", "mix"];
+
+    views.forEach(v => {
+        document.body.classList.remove("mobile-view-" + v);
+    });
+
+    document.body.classList.add("mobile-view-" + view);
+
+    document.querySelectorAll(".mobile-tab").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.view === view);
+    });
+
+    setTimeout(drawStatic, 80);
+}
+
+document.querySelectorAll(".mobile-tab").forEach(btn => {
+    btn.onclick = () => setMobileView(btn.dataset.view);
+});
+
 function fillWaveSelects() {
     for (const id of ["osc1_wave", "osc2_wave"]) {
         const s = $(id);
@@ -934,12 +1119,14 @@ function midiToFreq(midi) {
 }
 
 function isShortSound() {
-    return current.type === "Pluck" || current.type === "Perc";
+    return current.type === "Pluck" || current.type === "Perc" || current.type === "Meow";
 }
 
 function exportMidiForType() {
     if (current.type === "Bass") return 36;
     if (current.type === "Pad" || current.type === "Chill" || current.type === "Texture") return 48;
+    if (current.type === "Meow") return 67;
+    if (current.type === "Voice") return 60;
     if (current.type === "SFX") return 60;
     return 60;
 }
@@ -1017,7 +1204,7 @@ function cfg() {
         gate: Number($("gate").value),
 
         rawMaster: rawMaster,
-        master: Math.pow(rawMaster / 0.35, 2) * 0.45
+        master: Math.pow(rawMaster, 1.15) * 0.62
     };
 }
 
@@ -1169,6 +1356,35 @@ function sampleWave(wave, phase) {
             0.70 * Math.sin(phase * Math.PI * 6) +
             0.35 * Math.sin(phase * Math.PI * 10)
         ) / 2.3;
+    }
+
+    if (wave === "voice") {
+        return (
+            0.85 * Math.sin(phase * Math.PI * 2) +
+            0.35 * Math.sin(phase * Math.PI * 4) +
+            0.75 * Math.sin(phase * Math.PI * 6) +
+            0.42 * Math.sin(phase * Math.PI * 10) +
+            0.18 * Math.sin(phase * Math.PI * 16)
+        ) / 2.55;
+    }
+
+    if (wave === "choir") {
+        return (
+            0.65 * Math.sin(phase * Math.PI * 2) +
+            0.55 * Math.sin((phase * 1.01) * Math.PI * 2) +
+            0.25 * Math.sin(phase * Math.PI * 6) +
+            0.22 * Math.sin(phase * Math.PI * 8)
+        ) / 1.67;
+    }
+
+    if (wave === "meow") {
+        const bend = 1.0 + 0.18 * Math.sin(phase * Math.PI * 2 * 0.7);
+        return (
+            0.85 * Math.sin(phase * Math.PI * 2 * bend) +
+            0.55 * Math.sin(phase * Math.PI * 6 * bend) +
+            0.40 * Math.sin(phase * Math.PI * 10 * bend) +
+            0.18 * Math.sin(phase * Math.PI * 18)
+        ) / 1.98;
     }
 
     if (wave === "glass") {
@@ -1327,11 +1543,8 @@ function makeDistortionCurve(amount) {
     for (let i = 0; i < n; i++) {
         const x = i * 2 / n - 1;
 
-        if (amount <= 0.001) {
-            curve[i] = x;
-        } else {
-            curve[i] = ((1 + k) * x) / (1 + k * Math.abs(x));
-        }
+        if (amount <= 0.001) curve[i] = x;
+        else curve[i] = ((1 + k) * x) / (1 + k * Math.abs(x));
     }
 
     return curve;
@@ -1343,7 +1556,6 @@ function makeImpulse(ctx, seconds = 1.2, decay = 2.2) {
 
     for (let ch = 0; ch < 2; ch++) {
         const data = buffer.getChannelData(ch);
-
         for (let i = 0; i < len; i++) {
             data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
         }
@@ -1357,9 +1569,7 @@ function makeNoiseBuffer(ctx) {
     const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
     const data = buffer.getChannelData(0);
 
-    for (let i = 0; i < len; i++) {
-        data[i] = Math.random() * 2 - 1;
-    }
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
 
     return buffer;
 }
@@ -1371,9 +1581,7 @@ function makePeriodic(ctx, wave) {
 
     if (wave === "pulse") {
         const duty = 0.24;
-        for (let n = 1; n < size; n++) {
-            imag[n] = (2 * Math.sin(n * Math.PI * duty)) / (n * Math.PI);
-        }
+        for (let n = 1; n < size; n++) imag[n] = (2 * Math.sin(n * Math.PI * duty)) / (n * Math.PI);
     }
 
     if (wave === "organ") {
@@ -1384,9 +1592,7 @@ function makePeriodic(ctx, wave) {
     }
 
     if (wave === "bright") {
-        for (let n = 1; n < size; n++) {
-            imag[n] = 1 / n;
-        }
+        for (let n = 1; n < size; n++) imag[n] = 1 / n;
     }
 
     if (wave === "vowel") {
@@ -1395,6 +1601,32 @@ function makePeriodic(ctx, wave) {
         imag[3] = 0.70;
         imag[5] = 0.35;
         imag[8] = 0.20;
+    }
+
+    if (wave === "voice") {
+        imag[1] = 0.85;
+        imag[2] = 0.35;
+        imag[3] = 0.75;
+        imag[5] = 0.42;
+        imag[8] = 0.18;
+        imag[13] = 0.10;
+    }
+
+    if (wave === "choir") {
+        imag[1] = 0.75;
+        imag[2] = 0.35;
+        imag[3] = 0.28;
+        imag[4] = 0.22;
+        imag[6] = 0.15;
+    }
+
+    if (wave === "meow") {
+        imag[1] = 1.0;
+        imag[2] = 0.45;
+        imag[3] = 0.72;
+        imag[5] = 0.55;
+        imag[9] = 0.26;
+        imag[14] = 0.15;
     }
 
     if (wave === "glass") {
@@ -1418,9 +1650,7 @@ function makePeriodic(ctx, wave) {
     }
 
     if (wave === "noiseform") {
-        for (let n = 1; n < size; n++) {
-            imag[n] = Math.sin(n * 19.17) / Math.sqrt(n);
-        }
+        for (let n = 1; n < size; n++) imag[n] = Math.sin(n * 19.17) / Math.sqrt(n);
     }
 
     return ctx.createPeriodicWave(real, imag, {disableNormalization: false});
@@ -1439,6 +1669,31 @@ function createOsc(ctx, wave, freq, detune) {
     osc.detune.value = detune;
 
     return osc;
+}
+
+function addSpecialMotion(ctx, osc, wave, startTime, stopTime, sources) {
+    if (wave === "meow") {
+        const f = osc.frequency.value;
+        osc.frequency.setValueAtTime(Math.max(20, f * 1.45), startTime);
+        osc.frequency.exponentialRampToValueAtTime(Math.max(20, f * 0.78), startTime + 0.18);
+        osc.frequency.exponentialRampToValueAtTime(Math.max(20, f * 1.05), startTime + 0.42);
+    }
+
+    if (wave === "voice" || wave === "choir") {
+        const lfo = ctx.createOscillator();
+        const depth = ctx.createGain();
+
+        lfo.frequency.value = wave === "choir" ? 4.0 : 5.4;
+        depth.gain.value = wave === "choir" ? 7 : 13;
+
+        lfo.connect(depth);
+        depth.connect(osc.detune);
+
+        lfo.start(startTime);
+        if (stopTime !== null) lfo.stop(stopTime);
+
+        sources.push(lfo);
+    }
 }
 
 function tunedFreq(base, oct, semi) {
@@ -1467,9 +1722,9 @@ async function ensureAudio() {
 
         analyser.fftSize = 512;
 
-        limiter.threshold.value = -26;
-        limiter.knee.value = 4;
-        limiter.ratio.value = 12;
+        limiter.threshold.value = -16;
+        limiter.knee.value = 6;
+        limiter.ratio.value = 10;
         limiter.attack.value = 0.003;
         limiter.release.value = 0.18;
 
@@ -1505,9 +1760,7 @@ async function ensureAudio() {
         analyserData = new Uint8Array(analyser.frequencyBinCount);
     }
 
-    if (audio.ctx.state !== "running") {
-        await audio.ctx.resume();
-    }
+    if (audio.ctx.state !== "running") await audio.ctx.resume();
 
     applyAudio();
     return audio;
@@ -1555,50 +1808,28 @@ function connectSources(ctx, c, freq, voiceGain, startTime, stopTime) {
     const sources = [];
 
     if (c.osc1_on) {
-        const osc = createOsc(
-            ctx,
-            c.osc1_wave,
-            tunedFreq(freq, c.osc1_oct, c.osc1_semi),
-            c.osc1_detune
-        );
-
-        connectWithPan(ctx, osc, c.osc1_level * 0.24, c.osc1_pan, voiceGain);
-
+        const osc = createOsc(ctx, c.osc1_wave, tunedFreq(freq, c.osc1_oct, c.osc1_semi), c.osc1_detune);
+        addSpecialMotion(ctx, osc, c.osc1_wave, startTime, stopTime, sources);
+        connectWithPan(ctx, osc, c.osc1_level * 0.36, c.osc1_pan, voiceGain);
         osc.start(startTime);
         if (stopTime !== null) osc.stop(stopTime);
-
         sources.push(osc);
     }
 
     if (c.osc2_on) {
-        const osc = createOsc(
-            ctx,
-            c.osc2_wave,
-            tunedFreq(freq, c.osc2_oct, c.osc2_semi),
-            c.osc2_detune
-        );
-
-        connectWithPan(ctx, osc, c.osc2_level * 0.24, c.osc2_pan, voiceGain);
-
+        const osc = createOsc(ctx, c.osc2_wave, tunedFreq(freq, c.osc2_oct, c.osc2_semi), c.osc2_detune);
+        addSpecialMotion(ctx, osc, c.osc2_wave, startTime, stopTime, sources);
+        connectWithPan(ctx, osc, c.osc2_level * 0.36, c.osc2_pan, voiceGain);
         osc.start(startTime);
         if (stopTime !== null) osc.stop(stopTime);
-
         sources.push(osc);
     }
 
     if (c.sub_on) {
-        const osc = createOsc(
-            ctx,
-            c.sub_wave,
-            tunedFreq(freq, c.sub_oct, 0),
-            0
-        );
-
-        connectWithPan(ctx, osc, c.sub_level * 0.16, 0, voiceGain);
-
+        const osc = createOsc(ctx, c.sub_wave, tunedFreq(freq, c.sub_oct, 0), 0);
+        connectWithPan(ctx, osc, c.sub_level * 0.22, 0, voiceGain);
         osc.start(startTime);
         if (stopTime !== null) osc.stop(stopTime);
-
         sources.push(osc);
     }
 
@@ -1622,7 +1853,7 @@ function connectSources(ctx, c, freq, voiceGain, startTime, stopTime) {
         }
 
         noise.connect(noiseFilter);
-        connectWithPan(ctx, noiseFilter, c.noise_level * 0.055, 0, voiceGain);
+        connectWithPan(ctx, noiseFilter, c.noise_level * 0.080, 0, voiceGain);
 
         noise.start(startTime);
         if (stopTime !== null) noise.stop(stopTime);
@@ -1646,18 +1877,12 @@ async function noteOn(id, freq) {
     const voiceGain = ctx.createGain();
 
     voiceGain.gain.setValueAtTime(0.0001, now);
-    voiceGain.gain.linearRampToValueAtTime(0.22, now + c.attack);
+    voiceGain.gain.linearRampToValueAtTime(0.30, now + c.attack);
 
     if (shortSound) {
-        voiceGain.gain.exponentialRampToValueAtTime(
-            0.0001,
-            now + c.attack + c.decay + c.release
-        );
+        voiceGain.gain.exponentialRampToValueAtTime(0.0001, now + c.attack + c.decay + c.release);
     } else {
-        voiceGain.gain.linearRampToValueAtTime(
-            0.22 * c.sustain,
-            now + c.attack + c.decay
-        );
+        voiceGain.gain.linearRampToValueAtTime(0.30 * c.sustain, now + c.attack + c.decay);
     }
 
     voiceGain.connect(audio.input);
@@ -1737,9 +1962,7 @@ async function hardStopAudio() {
     analyserData = null;
     visualRunning = false;
 
-    $("playBtn").classList.remove("active");
     $("topPlayBtn").classList.remove("active");
-    $("playBtn").textContent = "Play";
     $("topPlayBtn").textContent = "Play";
     $("status").textContent = "Stopped";
     $("meterFill").style.width = "1%";
@@ -1752,9 +1975,7 @@ function startLoop() {
 
     playing = true;
 
-    $("playBtn").classList.add("active");
     $("topPlayBtn").classList.add("active");
-    $("playBtn").textContent = "Stop";
     $("topPlayBtn").textContent = "Stop";
     $("status").textContent = "Playing";
 
@@ -1913,9 +2134,9 @@ function createOfflineGraph(ctx, c) {
     dry.gain.value = 0.9;
     master.gain.value = c.master;
 
-    limiter.threshold.value = -26;
-    limiter.knee.value = 4;
-    limiter.ratio.value = 12;
+    limiter.threshold.value = -16;
+    limiter.knee.value = 6;
+    limiter.ratio.value = 10;
     limiter.attack.value = 0.003;
     limiter.release.value = 0.18;
 
@@ -1939,6 +2160,33 @@ function createOfflineGraph(ctx, c) {
     limiter.connect(ctx.destination);
 
     return input;
+}
+
+function normalizeAudioBuffer(buffer, targetPeak = 0.88) {
+    let peak = 0;
+
+    for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+        const data = buffer.getChannelData(ch);
+
+        for (let i = 0; i < data.length; i++) {
+            const v = Math.abs(data[i]);
+            if (v > peak) peak = v;
+        }
+    }
+
+    if (peak < 0.00001) return buffer;
+
+    const gain = Math.min(8.0, targetPeak / peak);
+
+    for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+        const data = buffer.getChannelData(ch);
+
+        for (let i = 0; i < data.length; i++) {
+            data[i] = Math.max(-1, Math.min(1, data[i] * gain));
+        }
+    }
+
+    return buffer;
 }
 
 function writeWav(buffer) {
@@ -2010,13 +2258,15 @@ async function renderExport() {
     const freq = midiToFreq(midi);
 
     const noteStart = 0.05;
-    const noteLength = shortSound ? 0.18 : 4.0;
+    const noteLength = shortSound ? 0.45 : 4.0;
 
     const duration = shortSound
-        ? Math.max(1.0, c.attack + c.decay + c.release + 0.6)
+        ? Math.max(1.4, c.attack + c.decay + c.release + 0.9)
         : noteLength + c.release + 1.0;
 
-    const off = new OfflineAudioContext(
+    const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+
+    const off = new OfflineCtx(
         2,
         Math.ceil(rate * duration),
         rate
@@ -2026,7 +2276,7 @@ async function renderExport() {
     const voiceGain = off.createGain();
 
     voiceGain.gain.setValueAtTime(0.0001, noteStart);
-    voiceGain.gain.linearRampToValueAtTime(0.22, noteStart + c.attack);
+    voiceGain.gain.linearRampToValueAtTime(0.30, noteStart + c.attack);
 
     if (shortSound) {
         voiceGain.gain.exponentialRampToValueAtTime(
@@ -2035,12 +2285,12 @@ async function renderExport() {
         );
     } else {
         voiceGain.gain.linearRampToValueAtTime(
-            0.22 * c.sustain,
+            0.30 * c.sustain,
             noteStart + c.attack + c.decay
         );
 
         voiceGain.gain.setValueAtTime(
-            0.22 * c.sustain,
+            0.30 * c.sustain,
             noteStart + noteLength
         );
 
@@ -2063,7 +2313,9 @@ async function renderExport() {
             : noteStart + noteLength + c.release + 0.2
     );
 
-    const rendered = await off.startRendering();
+    let rendered = await off.startRendering();
+    rendered = normalizeAudioBuffer(rendered, 0.88);
+
     const wavBlob = writeWav(rendered);
 
     const format = $("exportFormat").value;
@@ -2104,7 +2356,9 @@ function downloadBlob(blob, filename) {
 
     a.href = url;
     a.download = filename;
+    document.body.appendChild(a);
     a.click();
+    a.remove();
 
     setTimeout(() => URL.revokeObjectURL(url), 3000);
 }
@@ -2147,6 +2401,7 @@ function randomize() {
     $("release").value = (0.12 + Math.random() * 1.2).toFixed(2);
     $("bpm").value = Math.floor(90 + Math.random() * 80);
     $("gate").value = (0.3 + Math.random() * 0.55).toFixed(2);
+    $("master").value = 1.0;
 
     updateLabels();
     applyAudio();
@@ -2187,10 +2442,7 @@ for (const id of controlIds) {
 $("presetSearch").addEventListener("input", makePresetList);
 $("typeFilter").addEventListener("change", makePresetList);
 
-$("playBtn").onclick = togglePlay;
 $("topPlayBtn").onclick = togglePlay;
-$("stopBtn").onclick = hardStopAudio;
-$("randomBtn").onclick = randomize;
 
 $("exportBtn").onclick = () => {
     renderExport().catch(err => {
@@ -2212,6 +2464,7 @@ makePresetList();
 buildKeyboard();
 
 setTheme(localStorage.getItem("waveforge_theme") || "dark");
+setMobileView("wave");
 loadPreset(PRESETS[0].id);
 </script>
 
