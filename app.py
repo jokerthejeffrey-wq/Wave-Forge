@@ -1974,50 +1974,92 @@ function writeWav(buffer) {
 }
 
 async function renderExport() {
-    $("status").textContent = "Rendering";
+    $("status").textContent = "Rendering single note";
 
     const c = cfg();
     const rate = 44100;
-    const stepSec = (60 / c.bpm) * 0.5;
-    const noteLength = stepSec * c.gate;
-    const seq = current.sequence;
-    const duration = seq.length * stepSec + c.release + 1.0;
 
-    const off = new OfflineAudioContext(2, Math.ceil(rate * duration), rate);
+    const shortSound = isShortSound();
+
+    // One note only.
+    // Bass exports low C.
+    // Pads / chill / texture export lower C.
+    // Everything else exports middle C.
+    const midi = exportMidiForType();
+    const freq = midiToFreq(midi);
+
+    const noteStart = 0.05;
+
+    // Pads become long single notes.
+    // Plucks / perc become short single hits.
+    const noteLength = shortSound ? 0.18 : 4.0;
+
+    const duration = shortSound
+        ? Math.max(1.0, c.attack + c.decay + c.release + 0.6)
+        : noteLength + c.release + 1.0;
+
+    const off = new OfflineAudioContext(
+        2,
+        Math.ceil(rate * duration),
+        rate
+    );
+
     const input = createOfflineGraph(off, c);
 
-    seq.forEach((midi, i) => {
-        const t = i * stepSec;
-        const freq = midiToFreq(midi);
+    const voiceGain = off.createGain();
 
-        const voiceGain = off.createGain();
+    voiceGain.gain.setValueAtTime(0.0001, noteStart);
+    voiceGain.gain.linearRampToValueAtTime(0.22, noteStart + c.attack);
 
-        voiceGain.gain.setValueAtTime(0.0001, t);
-        voiceGain.gain.linearRampToValueAtTime(0.22, t + c.attack);
-        voiceGain.gain.linearRampToValueAtTime(0.22 * c.sustain, t + c.attack + c.decay);
-        voiceGain.gain.exponentialRampToValueAtTime(0.0001, t + noteLength + c.release);
-
-        voiceGain.connect(input);
-
-        connectSources(
-            off,
-            c,
-            freq,
-            voiceGain,
-            t,
-            t + noteLength + c.release + 0.1
+    if (shortSound) {
+        // Pluck / perc: short sound, no held sustain.
+        voiceGain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            noteStart + c.attack + c.decay + c.release
         );
-    });
+    } else {
+        // Pad / bass / lead / instrument: one long sustained note.
+        voiceGain.gain.linearRampToValueAtTime(
+            0.22 * c.sustain,
+            noteStart + c.attack + c.decay
+        );
+
+        voiceGain.gain.setValueAtTime(
+            0.22 * c.sustain,
+            noteStart + noteLength
+        );
+
+        voiceGain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            noteStart + noteLength + c.release
+        );
+    }
+
+    voiceGain.connect(input);
+
+    // ONE call only. This is the whole sample.
+    connectSources(
+        off,
+        c,
+        freq,
+        voiceGain,
+        noteStart,
+        shortSound
+            ? noteStart + c.attack + c.decay + c.release + 0.2
+            : noteStart + noteLength + c.release + 0.2
+    );
 
     const rendered = await off.startRendering();
     const wavBlob = writeWav(rendered);
 
     const format = $("exportFormat").value;
-    const baseName = current.name.replace(/[^a-z0-9]+/gi, "_").toLowerCase();
+    const baseName = current.name
+        .replace(/[^a-z0-9]+/gi, "_")
+        .toLowerCase();
 
     if (format === "wav") {
-        downloadBlob(wavBlob, baseName + ".wav");
-        $("status").textContent = "Exported";
+        downloadBlob(wavBlob, baseName + "_single_note.wav");
+        $("status").textContent = "Exported single note";
         return;
     }
 
@@ -2038,8 +2080,8 @@ async function renderExport() {
 
     const mp3Blob = await res.blob();
 
-    downloadBlob(mp3Blob, baseName + ".mp3");
-    $("status").textContent = "Exported";
+    downloadBlob(mp3Blob, baseName + "_single_note.mp3");
+    $("status").textContent = "Exported single note";
 }
 
 function downloadBlob(blob, filename) {
