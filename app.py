@@ -42,7 +42,7 @@ def build_presets():
          ["Tone", "Body", "Pick", "Layer", "Note", "Mock", "Air", "Pad", "Key", "Tap"]),
 
         ("Chill",
-         ["Ocean", "Late", "Blue", "Rain", "Moon", "Calm", "Night", "Empty", "Light", "Sleep"],
+         ["Ocean", "Late", "Grey", "Rain", "Moon", "Calm", "Night", "Empty", "Light", "Sleep"],
          ["Sample", "Loop", "Chord", "Mist", "Memory", "Room", "Tape", "Moment", "Drift", "Air"]),
 
         ("Texture",
@@ -96,6 +96,8 @@ def build_presets():
             is_bass = group == "Bass"
             is_sfx = group == "SFX"
             is_perc = group == "Perc"
+            is_pluck = group == "Pluck"
+            is_short = group in ["Pluck", "Perc"]
             is_pad = group in ["Pad", "Chill", "Texture"]
 
             preset = {
@@ -132,10 +134,10 @@ def build_presets():
                 "cutoff": 650 if is_bass else 2400 + ((index * 137) % 6500),
                 "q": round(1.0 + ((index * 3) % 80) / 10, 1),
 
-                "attack": 0.01 if is_bass or is_perc else round(0.08 + ((index * 4) % 60) / 100, 3),
-                "decay": 0.18 if is_perc else round(0.15 + ((index * 5) % 85) / 100, 2),
-                "sustain": 0.20 if group in ["Pluck", "Perc"] else round(0.35 + ((index * 3) % 50) / 100, 2),
-                "release": 0.18 if is_perc else 0.25 if is_bass else round(0.40 + ((index * 6) % 130) / 100, 2),
+                "attack": 0.005 if is_short else 0.01 if is_bass else round(0.08 + ((index * 4) % 60) / 100, 3),
+                "decay": round(0.08 + ((index * 3) % 25) / 100, 2) if is_pluck else 0.10 if is_perc else round(0.15 + ((index * 5) % 85) / 100, 2),
+                "sustain": 0.0 if is_short else round(0.35 + ((index * 3) % 50) / 100, 2),
+                "release": round(0.08 + ((index * 2) % 16) / 100, 2) if is_pluck else 0.08 if is_perc else 0.25 if is_bass else round(0.40 + ((index * 6) % 130) / 100, 2),
 
                 "drive": 0.22 if is_bass else 0.12 if is_sfx else round(((index * 2) % 18) / 100, 2),
                 "delay": 0.02 if is_bass or is_perc else round(0.06 + ((index * 3) % 28) / 100, 2),
@@ -143,7 +145,7 @@ def build_presets():
                 "reverb": 0.04 if is_bass else round(0.08 + ((index * 4) % 30) / 100, 2),
 
                 "bpm": 150 if is_perc or is_bass else 120 + (index % 35),
-                "gate": 0.45 if group in ["Pluck", "Perc"] else 0.72,
+                "gate": 0.18 if is_short else 0.72,
                 "master": 0.08 if is_bass else 0.10 if is_perc else 0.12,
 
                 "sequence": seqs[group],
@@ -209,7 +211,6 @@ body {
     background: var(--bg);
     color: var(--text);
     font-family: Arial, Helvetica, sans-serif;
-    cursor: default;
 }
 
 button,
@@ -634,7 +635,7 @@ body.light .key {
         <div class="keyboard-box">
             <div class="keyboard-top">
                 <span>Keyboard</span>
-                <span>Space / A W S E D F T G Y H U J K</span>
+                <span>Export = single note sample</span>
             </div>
             <div class="keyboard" id="keyboard"></div>
         </div>
@@ -906,6 +907,7 @@ const controlIds = [
 ];
 
 document.addEventListener("dragstart", e => e.preventDefault());
+
 document.addEventListener("selectstart", e => {
     const tag = e.target.tagName.toLowerCase();
     if (tag !== "input" && tag !== "select" && tag !== "option") {
@@ -929,6 +931,17 @@ function fillWaveSelects() {
 
 function midiToFreq(midi) {
     return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+function isShortSound() {
+    return current.type === "Pluck" || current.type === "Perc";
+}
+
+function exportMidiForType() {
+    if (current.type === "Bass") return 36;
+    if (current.type === "Pad" || current.type === "Chill" || current.type === "Texture") return 48;
+    if (current.type === "SFX") return 60;
+    return 60;
 }
 
 function valueText(id, value) {
@@ -1004,9 +1017,6 @@ function cfg() {
         gate: Number($("gate").value),
 
         rawMaster: rawMaster,
-
-        // Real output volume only.
-        // It does not affect the wave shape display.
         master: Math.pow(rawMaster / 0.35, 2) * 0.45
     };
 }
@@ -1226,7 +1236,6 @@ function drawWave() {
             y += sampleWave("noiseform", t * 3) * c.noise_level;
         }
 
-        // Fixed visual scale. Master volume does not affect wave sharpness.
         y = Math.max(-1, Math.min(1, y * 0.55));
 
         const px = t * w;
@@ -1523,8 +1532,6 @@ function applyAudio() {
 
     audio.reverbSend.gain.setTargetAtTime(c.reverb, now, 0.01);
     audio.dry.gain.setTargetAtTime(0.9, now, 0.01);
-
-    // This is the only final volume.
     audio.master.gain.setTargetAtTime(c.master, now, 0.01);
 }
 
@@ -1634,12 +1641,25 @@ async function noteOn(id, freq) {
     const c = cfg();
     const ctx = audio.ctx;
     const now = ctx.currentTime;
+    const shortSound = isShortSound();
 
     const voiceGain = ctx.createGain();
 
     voiceGain.gain.setValueAtTime(0.0001, now);
     voiceGain.gain.linearRampToValueAtTime(0.22, now + c.attack);
-    voiceGain.gain.linearRampToValueAtTime(0.22 * c.sustain, now + c.attack + c.decay);
+
+    if (shortSound) {
+        voiceGain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            now + c.attack + c.decay + c.release
+        );
+    } else {
+        voiceGain.gain.linearRampToValueAtTime(
+            0.22 * c.sustain,
+            now + c.attack + c.decay
+        );
+    }
+
     voiceGain.connect(audio.input);
 
     const sources = connectSources(ctx, c, freq, voiceGain, now, null);
@@ -1648,6 +1668,12 @@ async function noteOn(id, freq) {
         gain: voiceGain,
         sources: sources
     });
+
+    if (shortSound) {
+        setTimeout(() => {
+            noteOff(id);
+        }, Math.max(80, (c.attack + c.decay + c.release + 0.05) * 1000));
+    }
 
     startVisual();
 }
@@ -1980,18 +2006,10 @@ async function renderExport() {
     const rate = 44100;
 
     const shortSound = isShortSound();
-
-    // One note only.
-    // Bass exports low C.
-    // Pads / chill / texture export lower C.
-    // Everything else exports middle C.
     const midi = exportMidiForType();
     const freq = midiToFreq(midi);
 
     const noteStart = 0.05;
-
-    // Pads become long single notes.
-    // Plucks / perc become short single hits.
     const noteLength = shortSound ? 0.18 : 4.0;
 
     const duration = shortSound
@@ -2005,20 +2023,17 @@ async function renderExport() {
     );
 
     const input = createOfflineGraph(off, c);
-
     const voiceGain = off.createGain();
 
     voiceGain.gain.setValueAtTime(0.0001, noteStart);
     voiceGain.gain.linearRampToValueAtTime(0.22, noteStart + c.attack);
 
     if (shortSound) {
-        // Pluck / perc: short sound, no held sustain.
         voiceGain.gain.exponentialRampToValueAtTime(
             0.0001,
             noteStart + c.attack + c.decay + c.release
         );
     } else {
-        // Pad / bass / lead / instrument: one long sustained note.
         voiceGain.gain.linearRampToValueAtTime(
             0.22 * c.sustain,
             noteStart + c.attack + c.decay
@@ -2037,7 +2052,6 @@ async function renderExport() {
 
     voiceGain.connect(input);
 
-    // ONE call only. This is the whole sample.
     connectSources(
         off,
         c,
@@ -2265,5 +2279,7 @@ def convert_mp3():
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
+
 if __name__ == "__main__":
-    app.run(debug=True, port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    app.run(host="0.0.0.0", port=port)
